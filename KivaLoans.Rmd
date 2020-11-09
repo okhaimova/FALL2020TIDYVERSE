@@ -108,7 +108,10 @@ out for. To do so, we  will:
   country
 * `group_by`, `mutate`, and `ungroup` to give ranks to each sector by country
 * `filter` to find the top 5 sectors for each country
-* `facet_wrap` to create a graph for each country on its own
+
+We then proceed to create a graph for the top 5 sectors in those 5 countries. We
+can see the distribution of the loans by their sector types. We can use 
+`facet_Wrap` to create a seperate graph for each country.
 
 
 ```{r}
