@@ -64,3 +64,74 @@ ggplot(data = countries_top10) + geom_col(aes(x = reorder(country, count_loans),
 ```
 
 That's much more legible! Now we can see that the Philippines received the most Kiva loans of any country in 2016.
+
+
+--------------------------------------------------------------------------------
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+--------------------------------------------------------------------------------
+
+## Tidyverse EXTEND
+
+Orli Khaimova extending Douglas' vignette
+
+In order to see the order of which countries received the most loans more efficiently,
+we can sort the data in descending order, from greatest to least. We can use the 
+`arrange` function from the `dplyr` package. It orders the rows of a data frame by
+the specified column. By default, it sorts from least to greatest, so we would 
+have to specify descending order. Furthermore, a `by_group` argument can be 
+used if we want to group variables.
+
+```{r}
+countries <- countries %>%
+  arrange(desc(count_loans))
+
+head(countries)
+```
+
+From here, we can see that Phillipines, Kenya, and Cambodia have the most loans.
+
+
+We can also look further into those countries to see what the loans were taken 
+out for. To do so, we  will:
+
+* `add_count` to create a new column and find counts of variables group-wise
+  + It is equivalent to `group_by` and `mutate` used together
+* `mutate` to add an extra column in the data set with ranks
+* `dense_rank` to return the rank of rows 
+  + It will rank the rows, in descending order, with no gaps. This means when 
+    there are ties, it will give it the same rank.
+* `filter` to subset rows using column values
+  + In this case, we are selecting the top 5 ranks or groups with largest loan 
+    counts
+* `as.factor` from `base` to factor the sector column
+* `group_by`, `mutate`, and `ungroup` to find the counts for each sector by 
+  country
+* `group_by`, `mutate`, and `ungroup` to give ranks to each sector by country
+* `filter` to find the top 5 sectors for each country
+* `facet_wrap` to create a graph for each country on its own
+
+
+```{r}
+top_5_countries <- kiva %>%
+  add_count(country, name = "count_loans") %>%
+  mutate(rank = dense_rank(desc(count_loans))) %>%
+  filter(rank %in% 1:5) %>%
+  mutate(sector = as.factor(sector)) %>%
+  group_by(country, sector) %>%
+  mutate(sector_count = n()) %>%
+  ungroup() %>%
+  group_by(country) %>%
+  mutate(sector_rank = dense_rank(desc(sector_count))) %>%
+  ungroup() %>%
+  filter(sector_rank %in% 1:5)
+  
+
+ggplot(top_5_countries) + 
+  geom_bar(aes(x = sector, y = count_loans, fill = country), stat = "identity") +
+  coord_flip() +
+  facet_wrap(~country, scales = "free", ncol = 2) +
+  ggtitle("Distribution of Activities for Loans") +
+  theme(axis.text.x = element_blank(), axis.ticks = element_blank(), legend.position = "none") +
+  ylab("") +
+  xlab("Sector")
+```
