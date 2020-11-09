@@ -1,3 +1,155 @@
+Orli Khaimova extending Douglas Barley's Vignette
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Kiva Loans
+
+Kiva loans are extremely small loans, called microloans, made to entrepreneurs
+who need small seed loans to start their businesses. The loans are made in order
+to help better communities one entrepreneur at a time. The dataset used in this 
+vignette consists of a set of Kiva loans made in calendar year 2016 around the 
+globe. For the purpose of this vignette, the loans data was pared down to make
+the file size < 25 MB.
+```{r }
+kiva <- read.csv("https://raw.githubusercontent.com/douglasbarley/FALL2020TIDYVERSE/TidyverseVignette/kiva_loans.csv")
+
+library(tidyverse)
+glimpse(kiva)
+```
+
+The 2016 data includes 197,236 observations of 14 variables.
+
+## Tidyverse group_by() function
+
+The Tidyverse contains many packages that are useful in R for cleaning and 
+exploring data. When faced with a fairly long dataset, such as the Kiva set in 
+this example, it is useful to be able to count the data in a single column while
+grouping the counts according to discrete values in that column. The `group_by` 
+function in the `dplyr` corner of the Tidyverse helps to do just that. This helps
+a programmer quickly explore what is in the data.
+
+For example, it could be useful to know which countries received the most loans.
+```{r message= FALSE}
+countries <- data.frame(kiva) %>%
+  group_by(country) %>%
+      summarize(count_loans = n())
+
+head(countries)
+```
+
+## Visualizing the results
+
+Once we have a concise count of loans by country, it is helpful to be able to 
+visualize
+all of the results in a single graphic. The `ggplot()` function, also part of the
+Tidyverse, is very helpful in
+the visualization realm.
+```{r}
+ggplot(data = countries) + geom_col(aes(x = country, y = count_loans)) +
+  ggtitle("Loans Disbursed by Country") +
+  coord_flip() +  
+  ylab('Loan Count') +
+  xlab('Country') 
+
+```
+
+There are so many countries where loans were disbursed that it is difficult to 
+read each country's name. In order to simplify the listing and visualizations, 
+let's identify the top 10 countries that received loans.
+```{r}
+countries_top10 <- head(arrange(countries,desc(count_loans)), n = 10)
+countries_top10
+```
+
+Now we can graph the top 10 countries that received loans.
+```{r}
+ggplot(data = countries_top10) + geom_col(aes(x = reorder(country, count_loans), count_loans)) +
+  ggtitle("Loans Disbursed by Country") +
+  coord_flip() +  
+  ylab('Loan Count') +
+  xlab('Country')
+```
+
+That's much more legible! Now we can see that the Philippines received the most 
+Kiva loans of any country in 2016.
+
+--------------------------------------------------------------------------------
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+--------------------------------------------------------------------------------
+
+## Tidyverse EXTEND
+
+Orli Khaimova extending Douglas' vignette
+
+In order to see the order of which countries received the most loans more efficiently,
+we can sort the data in descending order, from greatest to least. We can use the 
+`arrange` function from the `dplyr` package. It orders the rows of a data frame by
+the specified column. By default, it sorts from least to greatest, so we would 
+have to specify descending order. Furthermore, a `by_group` argument can be 
+used if we want to group variables.
+
+```{r}
+countries <- countries %>%
+  arrange(desc(count_loans))
+
+head(countries)
+```
+
+From here, we can see that Phillipines, Kenya, and Cambodia have the most loans.
+
+
+We can also look further into those countries to see what the loans were taken 
+out for. To do so, we  will:
+
+* `add_count` to create a new column and find counts of variables group-wise
+  + It is equivalent to `group_by` and `mutate` used together
+* `mutate` to add an extra column in the data set with ranks
+* `dense_rank` to return the rank of rows 
+  + It will rank the rows, in descending order, with no gaps. This means when 
+    there are ties, it will give it the same rank.
+* `filter` to subset rows using column values
+  + In this case, we are selecting the top 5 ranks or groups with largest loan 
+    counts
+* `as.factor` from `base` to factor the sector column
+* `group_by`, `mutate`, and `ungroup` to find the counts for each sector by 
+  country
+* `group_by`, `mutate`, and `ungroup` to give ranks to each sector by country
+* `filter` to find the top 5 sectors for each country
+
+We then proceed to create a graph for the top 5 sectors in those 5 countries. We
+can see the distribution of the loans by their sector types. We can use 
+`facet_Wrap` to create a separate graph for each country.
+
+
+```{r}
+top_5_countries <- kiva %>%
+  add_count(country, name = "count_loans") %>%
+  mutate(rank = dense_rank(desc(count_loans))) %>%
+  filter(rank %in% 1:5) %>%
+  mutate(sector = as.factor(sector)) %>%
+  group_by(country, sector) %>%
+  mutate(sector_count = n()) %>%
+  ungroup() %>%
+  group_by(country) %>%
+  mutate(sector_rank = dense_rank(desc(sector_count))) %>%
+  ungroup() %>%
+  filter(sector_rank %in% 1:5)
+  
+
+ggplot(top_5_countries) + 
+  geom_bar(aes(x = sector, y = count_loans, fill = country), stat = "identity") +
+  coord_flip() +
+  facet_wrap(~country, scales = "free", ncol = 2) +
+  ggtitle("Distribution of Activities for Loans") +
+  theme(axis.text.x = element_blank(), axis.ticks = element_blank(), legend.position = "none") +
+  ylab("") +
+  xlab("Sector")
+```
+
+
+=======
 # Karim Hommod
 My analysis includs analysing the sales of video games all around the world, I used more than one Tidyverse packges, and collected the data from Kaggle. 
 =======
